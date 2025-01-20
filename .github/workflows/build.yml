@@ -41,7 +41,6 @@ jobs:
         echo "=============================================================================="
         df -hT
         echo "=============================================================================="
-
     - name: "Optimize Disk Space"
       uses: "hugoalh/disk-space-optimizer-ghaction@v0.8.1"
       with:
@@ -99,14 +98,12 @@ jobs:
         sudo -E apt clean
         sudo timedatectl set-timezone "$TZ"
         sudo chown $USER:$GROUPS $GITHUB_WORKSPACE
-
     - name: Clone source code
       working-directory: ./
       run: |
         git clone $REPO_URL -b $REPO_BRANCH ${{ env.OPENWRT_DIR }}
         cd ${{ env.OPENWRT_DIR }}
         sed -i 's|https://github.com/coolsnowwolf/luci.git;openwrt-23.05|https://github.com/coolsnowwolf/luci|g' feeds.conf.default
-
     - name: cache wrt build
       uses: stupidloud/cachewrtbuild@main
       with:
@@ -119,7 +116,6 @@ jobs:
       run: |
         ./scripts/feeds update -a
         ./scripts/feeds install -a
-
     - name: Load custom config
       run: |
         [ -e "$FILES" ] && mv "$FILES" ${{ env.OPENWRT_DIR }}/files
@@ -127,7 +123,6 @@ jobs:
         chmod +x "$DIY_SH"
         cd ${{ env.OPENWRT_DIR }}
         $GITHUB_WORKSPACE/"$DIY_SH"
-
     - name: Download package
       working-directory: ${{ env.OPENWRT_DIR }}
       run: |
@@ -135,7 +130,6 @@ jobs:
         make download -j8
         find dl -size -1024c -exec ls -l {} \;
         find dl -size -1024c -exec rm -f {} \;
-
     - name: Compile the firmware
       run: |
         chmod -R 755 ${{ env.OPENWRT_DIR }}
@@ -143,14 +137,12 @@ jobs:
         echo -e "$(nproc) thread compile"
         make -j$(nproc) --keep-going || { echo "编译失败"; exit 1; }
         echo "compile_status=success" >> $GITHUB_ENV
-
     - name: Debug: Find rootfs file
       if: ${{ env.compile_status }} == 'success' && !cancelled()
       run: |
         ROOTFS_FILE=$(find ${{ env.OPENWRT_DIR }}/bin/targets/ -name "*.tar.gz" -print -quit)
         echo "Found rootfs file: $ROOTFS_FILE"
         echo "ROOTFS_FILE=$ROOTFS_FILE" >> $GITHUB_ENV
-
     - name: Package OpenWrt Firmware
       if: ${{ env.compile_status }} == 'success' && !cancelled()
       uses: unifreq/openwrt_packit@master
